@@ -1,0 +1,401 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#4f46e5" />
+  <meta name="description" content="TaskFlow — organize tasks, build focus habits, and track your progress." />
+  <title>TaskFlow — Smart Task Manager</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="script.js" defer></script>
+  <script src="enhancements.js" defer></script>
+  <script src="v2.js" defer></script>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="app-header">
+      <a class="brand" href="#" aria-label="TaskFlow home">
+        <span class="brand-icon">✓</span>
+        <span>TaskFlow</span>
+      </a>
+      <div class="header-actions">
+        <button id="theme-toggle" class="icon-button" type="button" aria-label="Toggle dark mode" title="Toggle dark mode">🌙</button>
+        <button id="export-tasks-btn" class="button button-secondary" type="button">Export</button>
+        <button id="import-tasks-btn" class="button button-secondary" type="button">Import</button>
+        <input id="import-tasks-file" type="file" accept=".json,application/json" hidden />
+      </div>
+    </header>
+
+    <main>
+      <section class="welcome-section">
+        <div>
+          <p class="eyebrow">YOUR PERSONAL WORKSPACE</p>
+          <h1>Make today count.</h1>
+          <p class="muted">Plan your tasks, protect your focus, and celebrate your progress.</p>
+        </div>
+        <div class="today-chip"><span>📅</span><span id="today-label">Today</span></div>
+      </section>
+
+      <section class="stats-grid" aria-label="Task statistics">
+        <article class="stat-card">
+          <div class="stat-icon purple">📋</div>
+          <p>Total tasks</p>
+          <strong id="total-tasks">0</strong>
+        </article>
+        <article class="stat-card">
+          <div class="stat-icon blue">⚡</div>
+          <p>Active tasks</p>
+          <strong id="active-tasks">0</strong>
+        </article>
+        <article class="stat-card">
+          <div class="stat-icon green">✓</div>
+          <p>Completed</p>
+          <strong id="completed-tasks">0</strong>
+        </article>
+        <article class="stat-card">
+          <div class="stat-icon orange">⏰</div>
+          <p>Overdue</p>
+          <strong id="overdue-count">0</strong>
+        </article>
+      </section>
+
+      <section class="panel progress-panel">
+        <div class="section-heading">
+          <div>
+            <h2>Overall progress</h2>
+            <p class="muted">Every small step adds up.</p>
+          </div>
+          <strong id="progress-percent">0%</strong>
+        </div>
+        <div id="progress-track" class="progress-track" role="progressbar" aria-label="Task completion" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+          <div id="progress-fill" class="progress-fill"></div>
+        </div>
+        <p id="progress-message" class="muted">You can do it — start with one task.</p>
+      </section>
+
+      <div class="main-grid">
+        <section class="panel task-form-panel">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">TASK MANAGER</p>
+              <h2 id="form-heading">Create a task</h2>
+            </div>
+          </div>
+
+          <form id="task-form">
+            <div class="form-group">
+              <label for="task-input">Task title <span class="required">*</span></label>
+              <input id="task-input" name="title" type="text" maxlength="160" placeholder="What do you need to do?" required />
+            </div>
+
+            <div class="form-group">
+              <label for="task-notes">Notes</label>
+              <textarea id="task-notes" name="notes" rows="3" maxlength="1000" placeholder="Add extra details (optional)"></textarea>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="task-priority">Priority</label>
+                <select id="task-priority" name="priority">
+                  <option value="low">Low</option>
+                  <option value="medium" selected>Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="task-category">Category</label>
+                <select id="task-category" name="category">
+                  <option value="study">Study</option>
+                  <option value="work">Work</option>
+                  <option value="personal">Personal</option>
+                  <option value="other" selected>Other</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label for="task-due-date">Due date</label>
+                <input id="task-due-date" name="dueDate" type="date" />
+              </div>
+              <div class="form-group">
+                <label for="task-repeat">Repeat</label>
+                <select id="task-repeat" name="repeat">
+                  <option value="none">Does not repeat</option>
+                  <option value="daily">Every day</option>
+                  <option value="weekly">Every week</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="task-tags">Tags</label>
+              <input id="task-tags" name="tags" type="text" maxlength="200" placeholder="Exam, Project, Urgent" />
+              <small>Separate tags with commas.</small>
+            </div>
+
+            <div class="form-actions">
+              <button id="add-task-btn" class="button button-primary" type="submit">＋ Add task</button>
+              <button id="cancel-edit-btn" class="button button-secondary" type="button" hidden>Cancel edit</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="panel task-list-panel">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">YOUR WORK</p>
+              <h2>Your tasks</h2>
+            </div>
+            <span id="visible-task-count" class="count-pill">0 tasks</span>
+          </div>
+
+          <div class="filters">
+            <div class="form-group">
+              <label for="search-input">Search</label>
+              <input id="search-input" type="search" placeholder="Search title, notes, tags..." />
+            </div>
+            <div class="filter-row">
+              <div class="form-group">
+                <label for="sort-tasks">Sort by</label>
+                <select id="sort-tasks">
+                  <option value="default">Newest first</option>
+                  <option value="priority">Priority</option>
+                  <option value="due-date">Due date</option>
+                  <option value="alphabetical">Alphabetical</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="category-filter">Category</label>
+                <select id="category-filter">
+                  <option value="all">All categories</option>
+                  <option value="study">Study</option>
+                  <option value="work">Work</option>
+                  <option value="personal">Personal</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="tag-filter">Filter by tag</label>
+              <select id="tag-filter">
+                <option value="all">All tags</option>
+              </select>
+            </div>
+            <button id="clear-filters-btn" class="button button-secondary clear-filters-btn" type="button">
+              Clear filters
+            </button>
+          </div>
+
+          <div class="filter-tabs" role="group" aria-label="Filter tasks by status">
+            <button class="filter-btn active" data-filter="all" type="button">All</button>
+            <button class="filter-btn" data-filter="active" type="button">Active</button>
+            <button class="filter-btn" data-filter="completed" type="button">Completed</button>
+          </div>
+
+          <p id="empty-message" class="empty-state">No tasks here yet. Add your first task to get started!</p>
+          <div id="task-list" class="task-list" aria-live="polite"></div>
+        </section>
+      </div>
+
+      <section class="panel upcoming-panel">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">STAY AHEAD</p>
+            <h2>Deadlines</h2>
+          </div>
+        </div>
+        <div class="upcoming-grid">
+          <article class="mini-stat"><span>Due today</span><strong id="due-today-count">0</strong></article>
+          <article class="mini-stat"><span>Overdue</span><strong id="overdue-detail-count">0</strong></article>
+          <article class="mini-stat"><span>Next 7 days</span><strong id="upcoming-count">0</strong></article>
+        </div>
+      </section>
+
+      <section class="panel calendar-panel">
+        <div class="section-heading calendar-heading">
+          <div>
+            <p class="eyebrow">PLAN AHEAD</p>
+            <h2>Task calendar</h2>
+          </div>
+          <div class="calendar-nav">
+            <button id="prev-month" class="icon-button" type="button" aria-label="Previous month">←</button>
+            <strong id="calendar-month">Month Year</strong>
+            <button id="next-month" class="icon-button" type="button" aria-label="Next month">→</button>
+          </div>
+        </div>
+        <div class="calendar-weekdays" aria-hidden="true">
+          <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+        </div>
+        <div id="calendar-grid" class="calendar-grid"></div>
+        <div class="calendar-task-area">
+          <h3 id="calendar-tasks-heading">Tasks for selected date</h3>
+          <div id="calendar-tasks" class="calendar-tasks"></div>
+        </div>
+      </section>
+
+      <section class="panel insights-panel">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">AT A GLANCE</p>
+            <h2>Task insights</h2>
+          </div>
+        </div>
+        <div class="insights-grid">
+          <article class="insight-card"><span>Completion rate</span><strong id="insight-completion">0%</strong></article>
+          <article class="insight-card"><span>High priority active</span><strong id="insight-high">0</strong></article>
+          <article class="insight-card"><span>Medium priority active</span><strong id="insight-medium">0</strong></article>
+          <article class="insight-card"><span>Low priority active</span><strong id="insight-low">0</strong></article>
+        </div>
+      </section>
+
+      <section class="panel weekly-dashboard">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">KEEP MOVING FORWARD</p>
+            <h2>This week</h2>
+          </div>
+          <span class="count-pill">Monday–Sunday</span>
+        </div>
+        <p id="weekly-summary" class="muted">Your weekly activity at a glance.</p>
+        <div class="weekly-stats">
+          <article class="weekly-stat"><span>Tasks completed</span><strong id="weekly-completed">0</strong></article>
+          <article class="weekly-stat"><span>Focus sessions</span><strong id="weekly-focus-sessions">0</strong></article>
+          <article class="weekly-stat"><span>Daily average</span><strong id="weekly-average">0</strong></article>
+        </div>
+        <h3>Daily completions</h3>
+        <div id="weekly-chart" class="weekly-chart"></div>
+      </section>
+
+      <section class="panel goals-panel">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">YOUR PERSONAL TARGET</p>
+            <h2>Weekly goal & streak</h2>
+          </div>
+          <div class="streak-badge">🔥 <strong id="current-streak">0 days</strong></div>
+        </div>
+        <div class="goal-controls">
+          <div class="form-group">
+            <label for="weekly-goal-input">Tasks to complete this week</label>
+            <input id="weekly-goal-input" type="number" min="1" max="500" value="20" />
+          </div>
+          <button id="save-weekly-goal" class="button button-secondary" type="button">Save goal</button>
+        </div>
+        <p id="goal-progress-text" class="muted">0 of 20 tasks completed this week</p>
+        <div id="goal-progress-track" class="progress-track" role="progressbar" aria-label="Weekly goal progress" aria-valuemin="0" aria-valuemax="20" aria-valuenow="0">
+          <div id="goal-progress-fill" class="progress-fill"></div>
+        </div>
+      </section>
+
+      <section class="panel focus-timer">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">FOCUS TIME</p>
+            <h2>Pomodoro timer</h2>
+            <p id="timer-mode" class="muted">Ready to focus?</p>
+          </div>
+        </div>
+        <div class="focus-task-picker form-group">
+          <label for="focus-task-select">What are you focusing on?</label>
+          <select id="focus-task-select"><option value="">Choose a task...</option></select>
+          <p id="focus-task-progress" class="muted">Select a task to track sessions.</p>
+        </div>
+        <div id="timer-display" class="timer-display" role="timer" aria-label="Time remaining">25:00</div>
+        <div class="timer-presets">
+          <button type="button" data-minutes="25">Focus · 25 min</button>
+          <button type="button" data-minutes="5">Short break · 5 min</button>
+          <button type="button" data-minutes="15">Long break · 15 min</button>
+          <button type="button" data-minutes="50">Deep work · 50 min</button>
+        </div>
+        <div class="timer-controls">
+          <button id="timer-start" class="button button-primary" type="button">Start</button>
+          <button id="timer-pause" class="button button-secondary" type="button">Pause</button>
+          <button id="timer-reset" class="button button-secondary" type="button">Reset</button>
+        </div>
+        <p class="muted centered">Completed focus sessions: <strong id="focus-sessions">0</strong></p>
+      </section>
+
+      <section class="panel shortcuts-panel">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">QUICK CONTROLS</p>
+            <h2>Keyboard shortcuts</h2>
+          </div>
+        </div>
+        <div class="shortcut-list">
+          <p><kbd>/</kbd> Focus search</p>
+          <p><kbd>N</kbd> New task</p>
+          <p><kbd>Esc</kbd> Close dialogs or cancel editing</p>
+        </div>
+      </section>
+
+      <section class="panel analytics-panel" id="analytics-panel">
+        <div class="section-heading"><div><p class="eyebrow">YOUR MOMENTUM</p><h2>Productivity analytics</h2><p class="muted">A quick view of your recent progress.</p></div><span class="count-pill">Last 7 days</span></div>
+        <div class="analytics-summary" id="analytics-summary"></div>
+        <div class="analytics-chart-wrap"><div class="analytics-chart" id="analytics-chart" role="img" aria-label="Task completions over the last seven days"></div></div>
+        <div class="analytics-categories" id="analytics-categories"></div>
+      </section>
+
+      <section class="panel kanban-panel" id="kanban-panel">
+        <div class="section-heading"><div><p class="eyebrow">VISUAL WORKFLOW</p><h2>Kanban board</h2><p class="muted">Move a task to a different stage using its menu or drag it between columns.</p></div><span class="count-pill">Live task board</span></div>
+        <div class="kanban-board" id="kanban-board">
+          <div class="kanban-column" data-stage="todo"><div class="kanban-column-heading"><h3>To do</h3><span class="count-pill" data-stage-count="todo">0</span></div><div class="kanban-cards" data-stage-cards="todo"></div></div>
+          <div class="kanban-column" data-stage="progress"><div class="kanban-column-heading"><h3>In progress</h3><span class="count-pill" data-stage-count="progress">0</span></div><div class="kanban-cards" data-stage-cards="progress"></div></div>
+          <div class="kanban-column" data-stage="done"><div class="kanban-column-heading"><h3>Done</h3><span class="count-pill" data-stage-count="done">0</span></div><div class="kanban-cards" data-stage-cards="done"></div></div>
+        </div>
+      </section>
+
+      <section class="panel achievements-panel" id="achievements-panel">
+        <div class="section-heading"><div><p class="eyebrow">MILESTONES</p><h2>Achievements & XP</h2><p class="muted">Every completed task earns 10 XP. Your progress is saved on this device.</p></div><span class="streak-badge">🏆 <strong id="achievement-level">Level 1</strong></span></div>
+        <div class="xp-overview"><div><span class="muted">Total XP</span><strong id="achievement-xp">0 XP</strong></div><div class="xp-progress-track"><div id="achievement-xp-fill" class="xp-progress-fill"></div></div><p class="muted" id="achievement-next-level">0 / 100 XP to next level</p></div>
+        <div class="achievement-grid" id="achievement-grid"></div>
+      </section>
+    </main>
+
+    <footer class="app-footer">
+      <p>TaskFlow · Your tasks stay in this browser unless you export them.</p>
+    </footer>
+  </div>
+
+  <div id="confirm-modal" class="modal-overlay" hidden>
+    <div class="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-title" aria-describedby="confirm-message">
+      <div class="confirm-icon">🗑️</div>
+      <h2 id="confirm-title">Delete this task?</h2>
+      <p id="confirm-message">This action cannot be undone.</p>
+      <div class="confirm-actions">
+        <button id="cancel-delete-btn" class="button button-secondary" type="button">Cancel</button>
+        <button id="confirm-delete-btn" class="button button-danger" type="button">Delete task</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="import-confirm-modal" class="modal-overlay" hidden>
+    <div class="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="import-confirm-title" aria-describedby="import-confirm-message">
+      <div class="confirm-icon">📥</div>
+      <h2 id="import-confirm-title">Import tasks?</h2>
+      <p id="import-confirm-message">Importing tasks will replace your current task list. Continue?</p>
+      <div class="confirm-actions">
+        <button id="cancel-import-btn" class="button button-secondary" type="button">Cancel</button>
+        <button id="confirm-import-btn" class="button button-primary" type="button">Import tasks</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="task-details-modal" class="modal-overlay" hidden>
+    <div class="confirm-dialog task-details-dialog" role="dialog" aria-modal="true" aria-labelledby="task-details-title" aria-describedby="task-details-content">
+      <button id="close-task-details" class="details-close-btn" type="button" aria-label="Close task details">×</button>
+      <p class="eyebrow">TASK INFORMATION</p>
+      <h2 id="task-details-title">Task details</h2>
+      <div id="task-details-content" class="task-details-content"></div>
+      <div class="confirm-actions">
+        <button id="details-edit-btn" class="button button-primary" type="button">Edit task</button>
+        <button id="details-close-btn" class="button button-secondary" type="button">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="true"></div>
+</body>
+</html>
